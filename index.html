@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title></title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+
+  <link href="css/codiqa.ext.css" rel="stylesheet">
+  <link href="css/jquery.mobile-1.4.2.css" rel="stylesheet">
+
+  <link rel="stylesheet" type="text/css" href="css/style.css">
+
+  <script src="script/jquery.min.js"></script>
+  <script src="script/jquery.mobile-1.4.2.min.js"></script>
+  <script src="script/codiqa.ext.js"></script>
+
+  <script src="script/parse-1.2.18.min.js"></script>
+  
+  <script src="script/script.js"></script>
+  
+  <script src="script/Chart.js"></script>
+  
+</head>
+<body>
+
+<script type="text/javascript">
+       
+	   
+	   
+	   $(document).ready(function(){
+            
+			//登录
+			$("#login-submit").bind("click",function(){
+			    Parse.initialize("UQy6m1MZPnb4HPQgyAaOmqsiv5hr4b9Bnstqtylv", "eChC6rycKdRmoyGQl5QWh1C89ajTr5wcjkklB02A");
+				
+				var myname = $("#login-studentnumber").val();
+				var mypass = $("#login-password").val();
+				
+				Parse.User.logIn(myname, mypass, {
+					success: function(user) {
+					// Do stuff after successful login.
+					alert('登录成功')
+					window.location.href = "#pageHome";
+					//refreshTodo();
+					//getGpa();
+					},
+					error: function(user, error) {
+					// The login failed. Check error to see why.
+					alert('登录失败')
+					}
+				});
+  
+				
+			});
+			
+			//注销
+			$("#home-logout").bind("click",function(){
+				Parse.User.logOut();
+			});
+			
+			
+			//刷新代办事项
+			var refreshTodo = function(){
+				var TodoList = Parse.Object.extend("TodoList");
+				var query = new Parse.Query(TodoList);
+				query.equalTo("username", Parse.User.current());
+				query.find({
+					success: function(results) {
+						//alert("Successfully retrieved " + results.length + " todos");
+						// Do something with the returned Parse.Object values
+						for (var i = 0; i < results.length; i++) { 
+							var object = results[i];
+							//alert(object.id + ' - ' + object.get('todo'));
+							//$("#todomainlist").append("<li data-theme='a' data-icon='check' data-iconpos='right'>"+"<a href='' data-transition='none' class='ToDoDelete'>"+object.get("todo")+"</a>"+"</li>").trigger( "create" );
+						    $("<li data-theme='a' data-icon='check' data-iconpos='right'>"+"<a href='' data-transition='none' id="+"todo"+i+" class='ToDoDelete'>"+object.get("todo")+"</a>"+"</li>").appendTo( "#todomainlist" ).trigger( "create" );
+						};
+					    
+						$("#todomainlist").listview("refresh");
+
+					},
+					error: function(error) {
+						alert("Error: " + error.code + " " + error.message);
+					}
+				});
+
+			};
+			
+			//待办事项页面初始化
+			$('#pageTodo').bind('pageinit', function() {
+				Parse.initialize("UQy6m1MZPnb4HPQgyAaOmqsiv5hr4b9Bnstqtylv", "eChC6rycKdRmoyGQl5QWh1C89ajTr5wcjkklB02A");
+				refreshTodo();
+			});
+
+			
+
+			
+			
+			//添加代办事项
+			$("#todo-add").bind("click",function(){
+				Parse.initialize("UQy6m1MZPnb4HPQgyAaOmqsiv5hr4b9Bnstqtylv", "eChC6rycKdRmoyGQl5QWh1C89ajTr5wcjkklB02A");
+				var content = $("#todo-inputer").val();
+				
+				
+				var TodoList = Parse.Object.extend("TodoList");
+				var currentUser = Parse.User.current();
+				var todoObject = new TodoList();
+				
+				todoObject.set("todo",content);
+				todoObject.set("username",currentUser);
+				todoObject.set("check",false);
+				
+				todoObject.save(null, {
+					success: function(todoObject) {
+					// Execute any logic that should take place after the object is saved.
+					//alert('New object created with objectId: ' + todoObject.id);
+					location.reload();
+					
+					
+					},
+					error: function(todoObject, error) {
+					// Execute any logic that should take place if the save fails.
+					// error is a Parse.Error with an error code and description.
+					alert('Failed to create new object, with error code: ' + error.description);
+					}
+				});
+				
+
+				
+				
+			});
+		
+			//待办事项删除事件绑定
+			$(document).on("click", ".ToDoDelete",function(){
+				Parse.initialize("UQy6m1MZPnb4HPQgyAaOmqsiv5hr4b9Bnstqtylv", "eChC6rycKdRmoyGQl5QWh1C89ajTr5wcjkklB02A");
+				var TodoList = Parse.Object.extend("TodoList");
+				var todoquery = new Parse.Query(TodoList);
+				todoquery.equalTo("todo", $(this).html());
+				var userquery = new Parse.Query(TodoList);
+				userquery.equalTo("username",Parse.User.current());
+				todoquery.find({
+					
+					success: function(todoresults) {
+						for (var i = 0; i < todoresults.length; i++) { 
+							var object = todoresults[i];
+							//alert(object.id + ' - ' + object.get('todo'));
+							object.destroy({
+								success: function(results) {
+									// The object was deleted from the Parse Cloud.
+									alert("恭喜您完成了一件事，要再接再厉哟！");
+									location.reload();
+								},
+								error: function(results, error) {
+									// The delete failed.
+									// error is a Parse.Error with an error code and description.
+								}
+							});
+						}
+					},
+					
+					error: function(error) {
+						alert("Error: " + error.code + " " + error.message);
+					}
+				});	
+			});
+			
+			//获取后台绩点数据
+			var getGpa = function(){
+				Parse.initialize("UQy6m1MZPnb4HPQgyAaOmqsiv5hr4b9Bnstqtylv", "eChC6rycKdRmoyGQl5QWh1C89ajTr5wcjkklB02A");
+				var StudentGPA = Parse.Object.extend("StudentGPA");
+				var query = new Parse.Query(StudentGPA);
+				
+				query.equalTo("user", Parse.User.current());
+				query.find({
+				  success: function(results) {
+					
+					// Do something with the returned Parse.Object values
+					for (var i = 0; i < results.length; i++) { 
+					  var object = results[i];
+					  var gpa = object.get("gpa");
+					  var course = object.get("course");
+					  drawChart(gpa,course);
+					}
+
+				  },
+				  error: function(error) {
+					alert("Error: " + error.code + " " + error.message);
+				  }
+				});
+				
+			};
+			
+			
+			//绘制图表函数
+			var drawChart = function(gpa,course){
+				var ctx1 = $("#myChart1").get(0).getContext("2d");
+				var ctx2 = $("#myChart2").get(0).getContext("2d");
+				//This will get the first returned node in the jQuery collection.
+				var myNewChart1 = new Chart(ctx1);
+				var data1 = {
+					labels : ["第一学期","第二学期","第三学期","第四学期","第五学期","第六学期","第七学期","第八学期"],
+					datasets : [
+						{
+							fillColor : "rgba(151,187,205,0.5)",
+							strokeColor : "rgba(151,187,205,1)",
+							pointColor : "rgba(151,187,205,1)",
+							pointStrokeColor : "#fff",
+							data : gpa
+						}
+					]
+				}
+				
+				var myNewChart2 = new Chart(ctx2);
+				
+				var data2 = {
+					labels : ["挂科","1.0-1.9","2.0-2.9","3.0-4.0"],
+					datasets : [
+						{
+							fillColor : "rgba(151,187,205,0.5)",
+							strokeColor : "rgba(151,187,205,1)",
+							data : course
+						}
+					]
+				}
+			
+				var gpa_options = {
+					
+					//Boolean - If we show the scale above the chart data			
+					scaleOverlay : false,
+					
+					//Boolean - If we want to override with a hard coded scale
+					scaleOverride : true,
+					
+					//** Required if scaleOverride is true **
+					//Number - The number of steps in a hard coded scale
+					scaleSteps : 10,
+					//Number - The value jump in the hard coded scale
+					scaleStepWidth : 0.3,
+					//Number - The scale starting value
+					scaleStartValue : 1,
+
+					//String - Colour of the scale line	
+					scaleLineColor : "rgba(0,0,0,.1)",
+					
+					//Number - Pixel width of the scale line	
+					scaleLineWidth : 1,
+
+					//Boolean - Whether to show labels on the scale	
+					scaleShowLabels : true,
+					
+					//Interpolated JS string - can access value
+					scaleLabel : "<%=value%>",
+					
+					//String - Scale label font declaration for the scale label
+					scaleFontFamily : "'Arial'",
+					
+					//Number - Scale label font size in pixels	
+					scaleFontSize : 12,
+					
+					//String - Scale label font weight style	
+					scaleFontStyle : "normal",
+					
+					//String - Scale label font colour	
+					scaleFontColor : "#666",	
+					
+					///Boolean - Whether grid lines are shown across the chart
+					scaleShowGridLines : true,
+					
+					//String - Colour of the grid lines
+					scaleGridLineColor : "rgba(0,0,0,.05)",
+					
+					//Number - Width of the grid lines
+					scaleGridLineWidth : 1,	
+					
+					//Boolean - Whether the line is curved between points
+					bezierCurve : true,
+					
+					//Boolean - Whether to show a dot for each point
+					pointDot : true,
+					
+					//Number - Radius of each point dot in pixels
+					pointDotRadius : 3,
+					
+					//Number - Pixel width of point dot stroke
+					pointDotStrokeWidth : 1,
+					
+					//Boolean - Whether to show a stroke for datasets
+					datasetStroke : true,
+					
+					//Number - Pixel width of dataset stroke
+					datasetStrokeWidth : 2,
+					
+					//Boolean - Whether to fill the dataset with a colour
+					datasetFill : true,
+					
+					//Boolean - Whether to animate the chart
+					animation : true,
+
+					//Number - Number of animation steps
+					animationSteps : 60,
+					
+					//String - Animation easing effect
+					animationEasing : "easeOutQuart",
+
+					//Function - Fires when the animation is complete
+					onAnimationComplete : null
+					
+				}
+				
+				var course_options = {
+					
+					//Boolean - If we show the scale above the chart data			
+					scaleOverlay : false,
+					
+					//Boolean - If we want to override with a hard coded scale
+					scaleOverride : true,
+					
+					//** Required if scaleOverride is true **
+					//Number - The number of steps in a hard coded scale
+					scaleSteps : 10,
+					//Number - The value jump in the hard coded scale
+					scaleStepWidth : 1,
+					//Number - The scale starting value
+					scaleStartValue : 0,
+
+					//String - Colour of the scale line	
+					scaleLineColor : "rgba(0,0,0,.1)",
+					
+					//Number - Pixel width of the scale line	
+					scaleLineWidth : 1,
+
+					//Boolean - Whether to show labels on the scale	
+					scaleShowLabels : true,
+					
+					//Interpolated JS string - can access value
+					scaleLabel : "<%=value%>",
+					
+					//String - Scale label font declaration for the scale label
+					scaleFontFamily : "'Arial'",
+					
+					//Number - Scale label font size in pixels	
+					scaleFontSize : 12,
+					
+					//String - Scale label font weight style	
+					scaleFontStyle : "normal",
+					
+					//String - Scale label font colour	
+					scaleFontColor : "#666",	
+					
+					///Boolean - Whether grid lines are shown across the chart
+					scaleShowGridLines : true,
+					
+					//String - Colour of the grid lines
+					scaleGridLineColor : "rgba(0,0,0,.05)",
+					
+					//Number - Width of the grid lines
+					scaleGridLineWidth : 1,	
+					
+					//Boolean - Whether the line is curved between points
+					bezierCurve : true,
+					
+					//Boolean - Whether to show a dot for each point
+					pointDot : true,
+					
+					//Number - Radius of each point dot in pixels
+					pointDotRadius : 3,
+					
+					//Number - Pixel width of point dot stroke
+					pointDotStrokeWidth : 1,
+					
+					//Boolean - Whether to show a stroke for datasets
+					datasetStroke : true,
+					
+					//Number - Pixel width of dataset stroke
+					datasetStrokeWidth : 2,
+					
+					//Boolean - Whether to fill the dataset with a colour
+					datasetFill : true,
+					
+					//Boolean - Whether to animate the chart
+					animation : true,
+
+					//Number - Number of animation steps
+					animationSteps : 60,
+					
+					//String - Animation easing effect
+					animationEasing : "easeOutQuart",
+
+					//Function - Fires when the animation is complete
+					onAnimationComplete : null
+					
+				}
+				
+				new Chart(ctx1).Line(data1,gpa_options);
+				new Chart(ctx2).Bar(data2,course_options);
+				
+			};
+			
+			//学习情况页面初始化
+			$('#pageScore').bind('pageinit', function() {
+				Parse.initialize("UQy6m1MZPnb4HPQgyAaOmqsiv5hr4b9Bnstqtylv", "eChC6rycKdRmoyGQl5QWh1C89ajTr5wcjkklB02A");
+				getGpa();
+				
+			});
+			
+			//获取图书馆空座
+			var getSeats = function(){
+				var LibraSeats = Parse.Object.extend("LibraSeats");
+				var query = new Parse.Query(LibraSeats);
+				query.equalTo("objectId", "jI2GsRLj4Q");
+				query.find({
+				  success: function(results) {
+					//alert("Successfully retrieved " + results.length + " scores.");
+					// Do something with the returned Parse.Object values
+					for (var i = 0; i < results.length; i++) { 
+					  var object = results[i];
+					  var seats = object.get("seatsRemain");
+					  $("#library-seattext").html("<p><b>当前空座：" + seats + "</b></p>");
+					}
+				  },
+				  error: function(error) {
+					alert("Error: " + error.code + " " + error.message);
+				  }
+				});
+			};
+			
+			//图书馆页面初始化
+			$('#pageLibrary').bind('pageinit', function() {
+				Parse.initialize("UQy6m1MZPnb4HPQgyAaOmqsiv5hr4b9Bnstqtylv", "eChC6rycKdRmoyGQl5QWh1C89ajTr5wcjkklB02A");
+				getSeats();
+				
+			});
+			
+			//书籍查询功能
+			$("#booksearchbtn").bind("click", function() {
+				Parse.initialize("UQy6m1MZPnb4HPQgyAaOmqsiv5hr4b9Bnstqtylv", "eChC6rycKdRmoyGQl5QWh1C89ajTr5wcjkklB02A");
+				var content = $("#library-search").val();
+				var books = Parse.Object.extend("books");
+				var bookquery = new Parse.Query(books);
+				bookquery.equalTo("bookname", content);
+				bookquery.find({
+				  success: function(results) {
+					alert("找到了 " + results.length + " 个结果");
+					// Do something with the returned Parse.Object values
+					for (var i = 0; i < results.length; i++) { 
+					  var object = results[i];
+					  //alert(object.get("bookname")+" " + object.get("stock"));
+					  $("#bookname").html(object.get("bookname"));
+					  $("#writer").html(object.get("writer"));
+					  $("#stock").html(object.get("stock"));
+					}
+				  },
+				  error: function(error) {
+					alert("Error: " + error.code + " " + error.message);
+				  }
+				});
+			});
+		});
+		
+			
+		
+		
+		
+</script>
+
+<div data-role="page" data-control-title="login" id="pageLogin" class="myPage">
+    <div id="login-header" data-theme="a" data-role="header" class="myHeader">
+        <h1 id="login-label" class="ui-title myLabel">
+            iECUST
+        </h1>
+    </div>
+    <div class="background-image"></div>
+	<div role="main" class="ui-content content";>
+        <div style="height: 100px; position: relative;"
+        data-controltype="image" id="login-image" class="myImage">
+            
+        </div>
+        <form id="login-form" action="" method="POST" class="myForm">
+            <div class="ui-field-contain myInputer" data-controltype="textinput">
+                <label for="login-studentnumber" style="font-size: x-large;">
+                    学号
+                </label>
+                <input name="sninputer" id="login-studentnumber" placeholder="" value=""
+                type="text">
+            </div>
+            <div class="ui-field-contain myInputer" data-controltype="textinput">
+                <label for="login-password" style="font-size: x-large;">
+                    密码
+                </label>
+                <input name="pwinputer" id="login-password" placeholder="" value="" type="password">
+            </div>
+            <input type="hidden" name="studentnumber" value="">
+            <input type="hidden" name="password" value="">
+        </form>
+        <input id="login-submit" type="submit" value="登录" class="mySubmit">
+    </div>
+</div>
+<div data-role="page" data-control-title="Home" id="pageHome" class="myPage">
+    <div id="home-header" data-theme="a" data-role="header" class="myHeader">
+        <h1 id="home-Label" class="ui-title myLabel">
+            华东理工
+        </h1>
+    </div>
+    <div role="main" class="ui-content">
+        <div style=" text-align:center" data-controltype="image">
+            <img style="width: 288px; height: 75px" src="./image/ecust1.jpg">
+        </div>
+        <ul id="home-list" data-role="listview" data-divider-theme="a" data-inset="true"
+        class="myList">
+            <li data-theme="a">
+                <a href="#pageNews" data-transition="slide">
+                    校园新闻
+                </a>
+            </li>
+            <li data-theme="a">
+                <a href="#pageTodo" data-transition="slide" id="todo-begin">
+                    待办事项
+                </a>
+            </li>
+            <li data-theme="a">
+                <a href="#pageScore" data-transition="slide">
+                    学习情况
+                </a>
+            </li>
+            <li data-theme="a">
+                <a href="#pageLibrary" data-transition="slide">
+                    图书馆
+                </a>
+            </li>
+        </ul>
+        <a id="home-logout" href="#pageLogin" class="ui-btn  myButton">
+            注销
+        </a>
+    </div>
+</div>
+<div data-role="page" data-control-title="news" id="pageNews" class="myPage">
+    <div id="news-header" data-theme="a" data-role="header" class="myHeader">
+        <a id="news-back" data-transition="none" href="#pageHome" data-icon="arrow-l"
+        data-iconpos="left" class="ui-btn ui-btn-left ui-icon-arrow-l ui-btn-icon-left myButton">
+            返回
+        </a>
+        <h1 id="news-label" class="ui-title myLabel">
+            新闻
+        </h1>
+    </div>
+    <div role="main" class="ui-content">
+		<ul data-role="listview" class="ui-listview">
+						<li data-corners="false" data-shadow="false" data-iconshadow="true" data-wrapperels="div" data-icon="arrow-r" data-iconpos="right" data-theme="a" class="ui-btn <!--ui-btn-icon-right--> ui-li-has-arrow ui-li ui-first-child ui-li-has-thumb ui-btn-up-c"><div class="ui-btn-inner ui-li"><div class="ui-btn-text">
+				<a href="http://news.ecust.edu.cn/index_news_view.php?id=31652" class="ui-link-inherit">
+										    <img src="./iECUST_News_files/20140512120858162.jpg" alt="" class="ui-li-thumb">
+										<h3 class="ui-li-heading">【9月，你将到来】26名台湾地区考生参加我校免试生面试</h3>
+					<p class="ui-li-desc">2014-05-12</p>
+				</a>
+			</div><span class="ui-icon ui-icon-arrow-r ui-icon-shadow">&nbsp;</span></div></li>
+					<li data-corners="false" data-shadow="false" data-iconshadow="true" data-wrapperels="div" data-icon="arrow-r" data-iconpos="right" data-theme="a" class="ui-btn <!--ui-btn-icon-right--> ui-li-has-thumb ui-li-has-arrow ui-li ui-btn-up-c"><div class="ui-btn-inner ui-li"><div class="ui-btn-text">
+				<a href="http://news.ecust.edu.cn/index_news_view.php?id=31644" class="ui-link-inherit">
+										    <img src="./iECUST_News_files/20140512074909451.jpg" alt="" class="ui-li-thumb">
+										<h3 class="ui-li-heading">沈丁立教授解读十八大后的国际形势与中国外交</h3>
+					<p class="ui-li-desc">2014-05-12</p>
+				</a>
+			</div><span class="ui-icon ui-icon-arrow-r ui-icon-shadow">&nbsp;</span></div></li>
+					<li data-corners="false" data-shadow="false" data-iconshadow="true" data-wrapperels="div" data-icon="arrow-r" data-iconpos="right" data-theme="a" class="ui-btn <!--ui-btn-icon-right--> ui-li-has-arrow ui-li ui-li-has-thumb ui-btn-up-c"><div class="ui-btn-inner ui-li"><div class="ui-btn-text">
+				<a href="http://news.ecust.edu.cn/index_news_view.php?id=31626" class="ui-link-inherit">
+											<img src="./iECUST_News_files/ff6e9aed-b2d2-4dec-b326-c6b4f0ad2d48.jpg" alt="" class="ui-li-thumb">
+										<h3 class="ui-li-heading">百余名64届校友再回母校  重温半个世纪情怀</h3>
+					<p class="ui-li-desc">2014-05-10</p>
+				<iframe id="tmp_downloadhelper_iframe" style="display: none;"></iframe></a>
+			</div><span class="ui-icon ui-icon-arrow-r ui-icon-shadow">&nbsp;</span></div></li>
+					<li data-corners="false" data-shadow="false" data-iconshadow="true" data-wrapperels="div" data-icon="arrow-r" data-iconpos="right" data-theme="a" class="ui-btn <!--ui-btn-icon-right--> ui-li-has-thumb ui-li-has-arrow ui-li ui-btn-hover-c"><div class="ui-btn-inner ui-li"><div class="ui-btn-text">
+				<a href="http://news.ecust.edu.cn/index_news_view.php?id=31634" class="ui-link-inherit">
+										    <img src="./iECUST_News_files/2014059141520162.jpg" alt="" class="ui-li-thumb">
+										<h3 class="ui-li-heading">学校召开落实教代会提案工作会议</h3>
+					<p class="ui-li-desc">2014-05-1</p>
+				</a>
+			</div><span class="ui-icon ui-icon-arrow-r ui-icon-shadow">&nbsp;</span></div></li>
+					<li data-corners="false" data-shadow="false" data-iconshadow="true" data-wrapperels="div" data-icon="arrow-r" data-iconpos="right" data-theme="a" class="ui-btn <!--ui-btn-icon-right--> ui-li-has-arrow ui-li ui-li-has-thumb ui-btn-up-c"><div class="ui-btn-inner ui-li"><div class="ui-btn-text">
+				<a href="http://news.ecust.edu.cn/index_news_view.php?id=31624" class="ui-link-inherit">
+											<img src="./iECUST_News_files/2014059071837951.jpg" alt="" class="ui-li-thumb">
+										<h3 class="ui-li-heading">陈凯先院士做客我校名师讲坛畅谈新药创制</h3>
+					<p class="ui-li-desc">2014-05-09</p>
+				</a>
+			</div><span class="ui-icon ui-icon-arrow-r ui-icon-shadow">&nbsp;</span></div></li>
+					<li data-corners="false" data-shadow="false" data-iconshadow="true" data-wrapperels="div" data-icon="arrow-r" data-iconpos="right" data-theme="a" class="ui-btn <!--ui-btn-icon-right--> ui-li-has-arrow ui-li ui-li-has-thumb ui-btn-up-c"><div class="ui-btn-inner ui-li"><div class="ui-btn-text">
+				<a href="http://news.ecust.edu.cn/index_news_view.php?id=31633" class="ui-link-inherit">
+											<img src="./iECUST_News_files/2014059121348105.jpg" alt="" class="ui-li-thumb">
+										<h3 class="ui-li-heading">学校举行安全工作会议暨综治工作总结表彰大会</h3>
+					<p class="ui-li-desc">2014-05-09</p>
+				</a>
+			</div><span class="ui-icon ui-icon-arrow-r ui-icon-shadow">&nbsp;</span></div></li>
+					
+				</ul>
+    </div>
+</div>
+<div data-role="page" data-control-title="todo" id="pageTodo" class="myPage">
+    <div id="todo-header" data-theme="a" data-role="header" class="myHeader">
+        <h3 id="todo-header" class="ui-title myHeader">
+            待办事项
+        </h3>
+        <div class="ui-field-contain myInputer" data-controltype="textinput">
+            <label for="todo-inputer">
+                输入事项
+            </label>
+            <input name="todoinputer" id="todo-inputer" placeholder="" value="" type="text">
+        </div>
+        <a id="todo-back" data-transition="none" href="#pageHome" data-icon="arrow-l"
+        data-iconpos="left" class="ui-btn ui-btn-left ui-icon-arrow-l ui-btn-icon-left myButton">
+            返回
+        </a>
+    </div>
+    <div role="main" class="ui-content">
+        <a id="todo-add" href="#pageTodo" data-icon="edit" data-iconpos="left"
+        class="ui-btn  ui-icon-edit ui-btn-icon-left myButton">
+            加入列表
+        </a>
+		<ul data-role="listview" data-divider-theme="a" data-inset="true" id="todomainlist">
+			<li data-role="list-divider" role="heading">
+					待办事项
+			</li>
+		    
+		</ul>
+    </div>
+</div>
+<div data-role="page" data-control-title="score" id="pageScore" class="myPage">
+    <div id="score-header" data-theme="a" data-role="header" class="myHeader">
+        <h3 id="score-header" class="ui-title myHeader">
+            学习情况
+        </h3>
+        <a id="score-back" data-transition="none" href="#pageHome" data-icon="arrow-l"
+        data-iconpos="left" class="ui-btn ui-btn-left ui-icon-arrow-l ui-btn-icon-left myButton">
+            返回
+        </a>
+    </div>
+    <div role="main" class="ui-content">
+        <div id="score-text" data-controltype="textblock" class="myText">
+            <p>
+                <b>
+                    平均绩点走势图
+                </b>
+            </p>
+        </div>
+        <canvas id="myChart1" width="180" height="100"></canvas>
+        <div id="score-text" data-controltype="textblock" class="myText">
+            <p>
+                <b>
+                    各科绩点分布图
+                </b>
+            </p>
+        </div>
+		<canvas id="myChart2" width="180" height="100"></canvas>
+    </div>
+</div>
+<div data-role="page" data-control-title="library" id="pageLibrary" class="myPage">
+    <div id="library-header" data-theme="a" data-role="header" class="myHeader">
+        <h1 id="library-label" class="ui-title myLabel">
+            图书馆
+        </h1>
+        <a id="library-back" data-transition="none" href="#pageHome" data-icon="arrow-l"
+        data-iconpos="left" class="ui-btn ui-btn-left ui-icon-arrow-l ui-btn-icon-left myButton">
+            返回
+        </a>
+    </div>
+    <div role="main" class="ui-content">
+        <div style=" text-align:center" data-controltype="image">
+            <img style="width: 288px; height: 130px" src="./image/ecust3.jpg">
+        </div>
+        <div class="ui-grid-a">
+            <div class="ui-block-a">
+                <div id="library-seattext" data-controltype="textblock" class="myText">
+                    <p>
+                        <b>
+                            当前空座：
+                        </b>
+                    </p>
+                </div>
+            </div>
+            <div class="ui-block-b">
+            </div>
+        </div>
+        <div class="ui-field-contain mySearch" data-controltype="searchinput">
+            <label for="library-search">
+                书籍查询
+            </label>
+            <input name="booksearch" id="library-search" placeholder="" value="" type="search">
+        </div>
+		<a href="" class="ui-btn " id="booksearchbtn">
+            查询
+        </a>
+		<hr style="height:3px; background-color:#ccc; border:0; margin-top:12px; margin-bottom:12px;">
+		<div data-controltype="textblock" id="bookheader">
+            <div class="ui-grid-b">
+				<div class="ui-block-a">
+					<div data-controltype="textblock">
+						<p style="text-align: center;">
+                        <b>
+                            书名
+                        </b>
+                    </p>
+					</div>
+				</div>
+				<div class="ui-block-b">
+					<div data-controltype="textblock">
+						<p style="text-align: center;">
+                        <b>
+                            作者
+                        </b>
+                    </p>
+					</div>
+				</div>
+				<div class="ui-block-c">
+					<div data-controltype="textblock">
+						<p style="text-align: center;">
+                        <b>
+                            在库
+                        </b>
+                    </p>
+					</div>
+				</div>
+			</div>
+			<div class="ui-grid-b" id="showbook">
+				<div class="ui-block-a">
+					<div data-controltype="textblock">
+						<p style="text-align: center;">
+							<b id="bookname">
+								
+							</b>
+						</p>
+					</div>
+				</div>
+				<div class="ui-block-b">
+					<div data-controltype="textblock">
+						<p style="text-align: center;">
+							<b id="writer">
+								
+							</b>
+						</p>
+					</div>
+				</div>
+				<div class="ui-block-c">
+					<div data-controltype="textblock">
+						<p style="text-align: center;">
+							<b id="stock">
+								
+							</b>
+						</p>
+					</div>
+				</div>
+			</div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
